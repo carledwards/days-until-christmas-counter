@@ -7,6 +7,15 @@ import ntptime
 import time
 import utime
 
+def calc_days_until_christmas(year, month, day, hour):
+    day -= (1 if hour < 8 else 0) # convert UTC -> PST
+    today = utime.mktime([year, month, day, 0, 0, 0, 0, 0])
+    if month == 12 and day > 25:
+        year += 1
+    christmas = utime.mktime([year, 12, 25, 0, 0, 0, 0, 0])
+    days_until_christmas = (christmas - today) // (60*60*24)
+    return days_until_christmas
+
 i2c = machine.I2C(scl=machine.Pin(15), sda=machine.Pin(4))
 
 # setup the OLED display
@@ -42,18 +51,9 @@ while True:
         # update the time from the internet
         ntptime.settime()
 
-        # calculate the days remaining
-        now = utime.localtime()
-        year = now[0]
-        month = now[1]
-        day = now[2]
-        today = utime.mktime([year, month, day, 0, 0, 0, 0, 0])
-        if month == 12 and day > 25:
-            year += 1
-        christmas = utime.mktime([year, 12, 25, 0, 0, 0, 0, 0])
-        days_until_christmas = (christmas - today) // (60*60*24)
-
-        #print(days_until_christmas)
+        # calculate the days remaining from the current time
+        now = utime.localtime() # UTC time
+        days_until_christmas = calc_days_until_christmas(now[0],now[1],now[2],now[3])
 
         # show the days until Christmas on the LED display
         seg.print(days_until_christmas if days_until_christmas > 0 else "Zero")
@@ -65,4 +65,3 @@ while True:
         # sometimes ntptime doesn't work (i.e. times out)
         print("got an error")
         time.sleep(5)
-
